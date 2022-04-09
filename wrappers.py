@@ -92,15 +92,17 @@ class WarpFrame(gym.ObservationWrapper):
         """Warp frames to 84x84 as done in the Nature paper and later work.
             프레임을 84x84, GrayScale로 바꿈"""
         gym.ObservationWrapper.__init__(self, env)
-        self.width = 84
-        self.height = 84
+        self.width2 = 42
+        self.height2 = 42
         # low = 0 high = 255를 수정
         self.observation_space = gym.spaces.Box(low=0, high=255,
             shape=(self.height, self.width, 1), dtype=np.uint8)
-
+    #frame1과 frame2의 픽셀값은 우선 42라는 임의의 수 사용
     def observation(self, frame):
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
-        frame = cv2.resize(frame, (self.width, self.height), interpolation=cv2.INTER_AREA)
+        frame1=frame[0:84,0:42]
+        frame2 = cv2.resize(frame, (self.width, self.height), interpolation=cv2.INTER_AREA)
+        frame=cv2.vhoncat([frame1,frame2])
         return frame[:, :, None]
 
 
