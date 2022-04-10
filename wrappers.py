@@ -7,6 +7,9 @@ import numpy as np
 import gym
 import copy
 import cv2
+from google.colab.patches import cv2_imshow
+from PIL import Image
+
 # 비활성화 시 속도 향상
 cv2.ocl.setUseOpenCL(False)
 
@@ -101,9 +104,18 @@ class WarpFrame(gym.ObservationWrapper):
     def observation(self, frame):
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
         frame1=frame[0:84,0:42]
-        frame1 = cv2.resize(frame1, (self.width, self.height/2), interpolation=cv2.INTER_AREA)
-        frame2 = cv2.resize(frame, (self.width, self.height/2), interpolation=cv2.INTER_AREA)
+        frame1 = cv2.resize(frame1, (self.width, int(self.height/2)), interpolation=cv2.INTER_AREA)
+        frame2 = cv2.resize(frame, (self.width, int(self.height/2)), interpolation=cv2.INTER_AREA)
         frame=cv2.vconcat([frame1,frame2])
+        
+        img_show=1
+        while(img_show==1):
+            pil_image=Image.fromarray(frame)
+            pil_image.save('/content/img/1.png','png')
+            img_show+=1
+        
+        
+
         return frame[:, :, None]
 
 
