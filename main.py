@@ -18,6 +18,10 @@ import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
 import torchvision.transforms as T
+import torchvision
+import torchsummary
+from torch.utils.tensorboard import SummaryWriter 
+writer = SummaryWriter()
 
 Transition = namedtuple('Transion', ('state', 'action', 'reward', 'next_state'))
 
@@ -114,6 +118,7 @@ def train(env, n_episodes, render=False):
                     target_net.load_state_dict(policy_net.state_dict())
 
             if done:
+                writer.add_scalar("Reward/train", total_reward, episode)
                 break
         # 10 episode마다 중간 결과값 출력 (지선 수정 : 50 -> 10)
         if episode % 10 == 0:
@@ -121,6 +126,7 @@ def train(env, n_episodes, render=False):
 
     # training 확인 용도
     print('model training is complete!!!\n')
+    writer.close()
     env.close()
     return
 
