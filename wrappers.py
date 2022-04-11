@@ -12,15 +12,21 @@ cv2.ocl.setUseOpenCL(False)
 
 # 1. 환경을 만드는 함수
 def make_env(env, stack_frames=True, episodic_life=False, clip_rewards=False, scale=False):
+    
+    assert 'NoFrameskip' in env.spec.id
     if episodic_life:
         env = EpisodicLifeEnv(env)  # 환경 초기화
-
+    
     env = NoopResetEnv(env, noop_max=30)
     env = MaxAndSkipEnv(env, skip=4)
     if 'FIRE' in env.unwrapped.get_action_meanings():
         env = FireResetEnv(env)
 
-    env = WarpFrame(env)
+    # Atlantis용 WarpFrame
+    env = AtlantisResizeAndRecolorFrame(env)
+    # Breakout돌릴때
+    # env = WarpFrame(env)
+    
     if stack_frames:
         env = FrameStack(env, 4)
     if clip_rewards:
@@ -103,6 +109,45 @@ class WarpFrame(gym.ObservationWrapper):
         frame = cv2.resize(frame, (self.width, self.height), interpolation=cv2.INTER_AREA)
         return frame[:, :, None]
 
+# 아틀란티스를 위한,,, 아틀란티스에 의한,,, 아틀란티스의 함수
+class AtlantisResizeAndRecolorFrame(gym.ObservationWrapper):
+    def __init__(self, env=None):
+        super(AtlantisResizeAndRecolorFrame, self).__init__(env)
+        self.observation_space = gym.spaces.Box(low=0, high=255, shape=(92, 84, 1), dtype=np.uint8)
+
+    def observation(self, obs):
+        return AtlantisResizeAndRecolorFrame.process(obs)
+    '''
+    @staticmethod
+    def get_channel_mask(image, center_values, offset=10):
+        bool_mask = np.ones_like(image[:,:,0]).astype(np.bool)
+        for channel, value in enumerate(center_values):
+            bool_mask = bool_mask & ((image[:,:, channel] < (value + offset)) & (image[:,:, channel] > (value - offset)))
+
+        return bool_mask
+
+    @staticmethod
+    def get_atlantis_mask(image):
+        mask = AtlantisResizeAndRecolorFrame.get_channel_mask(image, (210, 164, 74))
+
+        return mask
+    '''
+    #Transforms the image in 84 x 84 images aligned at the top of the screen
+    @staticmethod
+    def process(frame):
+        if frame.size == 210 * 160 * 3:
+            img = np.reshape(frame, [210, 160, 3]).astype(np.float32)
+        elif frame.size == 250 * 160 * 3:
+            img = np.reshape(frame, [250, 160, 3]).astype(np.float32)
+        else:
+            assert False, "Unknown resolution."
+            
+        # convert rgb -> gray
+        new_img = img[:, :, 0] * 0.299 + img[:, :, 1] * 0.587 + img[:, :, 2] * 0.114
+        resized_screen = cv2.resize(new_img, (92, 84), interpolation=cv2.INTER_AREA)
+        x_t = resized_screen[3:95, :]  # Aligns at top
+        x_t = np.reshape(resized_screen, [92, 84, 1])
+        return x_t.astype(np.uint8)
 
 class FireResetEnv(gym.Wrapper):
     def __init__(self, env=None):
